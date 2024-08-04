@@ -46,6 +46,9 @@ router.post("/students", StudentController.ListByFilter);
 router.get("/students/:search", StudentController.StudentSearch);
 
 
+router.get("/selected-students/:courseId/:sessionId", StudentController.SelectedStudents);
+
+
 
 
 
@@ -69,8 +72,6 @@ router.get("/students/:search", StudentController.StudentSearch);
  
  
  
- 
-
  //Course API
  router.post("/course", CourseController.AddCourse);
  router.get("/courses", CourseController.CourseList);

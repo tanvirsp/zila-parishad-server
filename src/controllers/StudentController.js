@@ -1,4 +1,4 @@
-const { AddStudentDataService, ViewStudentDataService, TotalStudentGroupBySessionService, ListByFilterService, StudentSearchService, UpdateStatusService,  } = require("../services/StudentServices")
+const { AddStudentDataService, ViewStudentDataService, TotalStudentGroupBySessionService, ListByFilterService, StudentSearchService, UpdateStatusService, SelectedStudentsService,  } = require("../services/StudentServices")
 
 
 exports.AddStudentData = async( req, res) =>{
@@ -35,5 +35,10 @@ exports.ListByFilter = async( req, res) =>{
 
 exports.StudentSearch = async( req, res) =>{
     const result = await StudentSearchService(req);
+    res.status(200).json(result)
+}
+
+exports.SelectedStudents = async( req, res) =>{
+    const result = await SelectedStudentsService(req);
     res.status(200).json(result)
 }

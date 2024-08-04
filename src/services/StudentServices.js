@@ -1,17 +1,21 @@
 const mongoose = require("mongoose");
 const ObjectId= mongoose.Types.ObjectId;
 const StudentModel = require("../models/StudentModel");
+const SessionModel = require("../models/SessionModel");
 
 exports.AddStudentDataService = async(req) =>{
 
     try {
         
-        const totaldata = await StudentModel.find({}).count();
-        const regNumber = 240001 + totaldata;
+        const session = await SessionModel.findOne({status: "1"});
+        const sessionId = session._id;
+        const reg = session.registerNumber;
 
-        // const options = await OptionModel.findOne({})
+        const totaldata = await StudentModel.find({}).count();
+        const regNumber = Number(reg + "001") + totaldata       
+
         const reqBody = req.body;
-        reqBody.sessionId = "66a907ebd0207235dcd141de";
+        reqBody.sessionId = sessionId;
 
         const allData = {...reqBody, regNumber }
         const data = await StudentModel.create(allData);
@@ -28,9 +32,30 @@ exports.AddStudentDataService = async(req) =>{
 
 exports.ViewStudentDataService =async(req) => {
     try {
-        const id = req.params.id;
-        const data= await StudentModel.findOne({_id: id})
-        return {status:"success", data:data};
+        const id = new ObjectId(req.params.id);
+        const MatchingStage = { $match: {_id: id}}
+        const JoiningSessionStage = { $lookup: {from: "sessions", localField: "sessionId", foreignField: "_id", as: "sessionDetails"} };
+        const UnwindSessionStage = {$unwind: "$sessionDetails" };
+        const JoiningCourseStage = { $lookup: {from: "courses", localField: "courseId", foreignField: "_id", as: "courseDetails"} };
+        const UnwindCourseStage = {$unwind: "$courseDetails" };
+
+        const ProjectionStage = {$project: {createdAt: 0, updatedAt: 0 , 
+            "sessionDetails.createdAt" :0, "sessionDetails.updatedAt" :0, "courseDetails.createdAt" :0, "courseDetails.updatedAt" :0  }}
+
+
+
+
+
+        const data= await StudentModel.aggregate([
+            MatchingStage,
+            JoiningSessionStage, UnwindSessionStage,
+            JoiningCourseStage, UnwindCourseStage,
+            ProjectionStage
+        ])
+
+
+
+        return {status:"success", data:data[0]};
     } catch (error) {
         return {status:"fail",data:error.toString()}
     }
@@ -43,7 +68,6 @@ exports.UpdateStatusService =async(req) =>{
         const id = new ObjectId(req.params.id);
         const statusNumber = req.params.statusNumber;
         
-        console.log(id, statusNumber );
 
         const data= await StudentModel.updateOne({_id: id}, {$set: {status: statusNumber}});
 
@@ -90,6 +114,7 @@ exports.TotalStudentGroupBySessionService = async(req) =>{
 
 
 
+
 exports.ListByFilterService = async(req) =>{
     try {
        
@@ -101,7 +126,6 @@ exports.ListByFilterService = async(req) =>{
         
         if(reqBody.courseId === "0"){
                 matchCondition.sessionId = new ObjectId (reqBody.sessionId);
-
                 selectedCondition.sessionId = new ObjectId (reqBody.sessionId);
 
         }else {
@@ -166,7 +190,6 @@ exports.StudentSearchService =async(req) => {
     try {
 
         const search = req.params.search;
-
         const MatchingStage = {
             $match: {$or: [{regNumber:search}, {mobile: search } ]}
         }
@@ -174,7 +197,6 @@ exports.StudentSearchService =async(req) => {
 
         const data= await StudentModel.aggregate([
             MatchingStage
-
         ])
 
         return {status:"success", data:data};
@@ -184,4 +206,24 @@ exports.StudentSearchService =async(req) => {
     } catch (error) {
         return {status:"fail",data:error.toString()}
     }
+}
+
+
+
+
+exports.SelectedStudentsService = async(req) =>{
+    try {
+        
+        const MatchingStage = {$match: {status: "1"}}
+        const data = await StudentModel.aggregate([
+            MatchingStage
+        ])
+
+
+        return {status:"success", data:data};
+
+    } catch (error) {
+        return {status:"fail",data:error.toString()}
+    }
+
 }
