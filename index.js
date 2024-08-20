@@ -10,7 +10,7 @@ const port= process.env.RUNNING_PORT || 5000
 
 
 
-mongoose.connect(`${process.env.DATABASE_LOCAL}`)
+mongoose.connect(`${process.env.DATABASE_ATLAST}`)
 .then(()=>{
     console.log(`Database connection is successful ` );
     

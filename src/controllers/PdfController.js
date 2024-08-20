@@ -1,9 +1,13 @@
+const mongoose = require('mongoose');
+const ObjectID= mongoose.Types.ObjectId;
+
 const puppeteer = require('puppeteer');
 const path= require('path');
 const GeneratePDF = require('../helper/GeneratePDF');
 
-var ejs = require('ejs');
+const ejs = require('ejs');
 const fs = require('fs');
+const ResultModel = require('../models/ResultModel');
 
 
 
@@ -23,14 +27,34 @@ exports.viewCertificate = async(req, res) =>{
 exports.createPDF = async(req, res) =>{
     try {
     
-        const data = {
-            name:"Mir Raisul Tanvir",
-            address: "Jamalpur Sadar"
-        };
+        
+        
+        const regNumber =req.params.regNumber;
+        
+        const MatchingStage = {$match: {regNumber: regNumber } };
+        const JoiningStudentStage = { $lookup: {from: "students", localField: "studentId", foreignField: "_id", as: "studentDetails"} };
+        const UnwindStudentStage = {$unwind: "$studentDetails" };
+
+        const JoiningCourseStage = { $lookup: {from: "courses", localField: "courseId", foreignField: "_id", as: "courseDetails"} };
+        const UnwindCourseStage = {$unwind: "$courseDetails" };
+
+
+
+
+
+        const data = await ResultModel.aggregate([
+            MatchingStage,
+            JoiningStudentStage, UnwindStudentStage,
+            JoiningCourseStage, UnwindCourseStage
+
+        ])
+
+        
+
 
         const filePathName = path.resolve(__dirname, '../views/certificate.ejs');
         const htmlString = fs.readFileSync(filePathName).toString();
-        const template = ejs.render(htmlString, data);
+        const template = ejs.render(htmlString, data[0]);
      
         
         const browser = await puppeteer.launch();
@@ -45,7 +69,7 @@ exports.createPDF = async(req, res) =>{
         await page.setContent(template)
 
 
-        await page.setViewport({width: 1680, height: 1050});
+        await page.setViewport({width: 1024, height: 700});
         
         const todayDate = new Date();
         const pdfn = await page.pdf({
@@ -53,6 +77,7 @@ exports.createPDF = async(req, res) =>{
             format: "A4",
             landscape: true,
             printBackground: true,
+            pageRanges: "1",
         });
 
         await browser.close();
@@ -63,7 +88,7 @@ exports.createPDF = async(req, res) =>{
             "Content-Length" : pdfn.length
         });
 
-        res.sendFile(pdfURL);
+        res.download(pdfURL);
         
         
     } catch (error) {

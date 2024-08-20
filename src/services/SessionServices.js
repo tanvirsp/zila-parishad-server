@@ -9,11 +9,8 @@ exports.AddSessionService = async(req) =>{
     try {
         const reqBody = req.body;
         const data = await SessionModel.create(reqBody);
-
         return {status:"success", data:data};
-
     } catch (error) {
-
         return {status:"fail",data:error.toString()}
 
     }
@@ -25,11 +22,8 @@ exports.AddSessionService = async(req) =>{
 exports.ViewSessionService = async(req) =>{
 
     try {
-
-        const id = new ObjectID(req.params.id);
-        
+        const id = new ObjectID(req.params.id); 
         const data = await SessionModel.findOne({_id: id});
-
         return {status:"success", data:data};
 
     } catch (error) {
@@ -43,21 +37,26 @@ exports.ViewSessionService = async(req) =>{
 exports.SessionListService = async(req) =>{
 
     try {
-
         const data = await SessionModel.find({}).sort({createdAt: -1})
-
         return {status:"success", data:data};
-
 
     } catch (error) {
         return {status:"fail",data:error.toString()}
     }
 
 
-
-    
-
 }
+
+
+exports.ActiveSessionService = async(req) =>{
+    try {
+        const data = await SessionModel.findOne({status: "1"})
+        return {status:"success", data:data};
+    } catch (error) {
+        return {status:"fail",data:error.toString()}
+    }
+}
+
 
 
 
@@ -78,7 +77,6 @@ exports.UpdateSessionService = async(req) =>{
         return {status:"fail",data:error.toString()}
 
     }
-
 
 }
 

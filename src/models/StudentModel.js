@@ -4,11 +4,13 @@ const dataSchema = mongoose.Schema( {
     name: {type: String, required: true},
     nameInEnglish: {type: String, required: true},
     birthDate: {type: String, required: true},
-    birthCertificateNumber: {type: String, required: true, unique: true },
-    nidNumber: {type: String, unique: true },
+    birthCertificateNumber: {type: String, required: true },
+    nidNumber: {type: String },
     
     fatherName: {type: String, required: true},
+    fatherNameinEnglish: {type: String, required: true},
     motherName: {type: String, required: true},
+    motherNameInEnglish: {type: String, required: true},
 
     parmanentVillage: {type: String, required: true},
     parmanentArea: {type: String, required: true},
@@ -51,7 +53,7 @@ const dataSchema = mongoose.Schema( {
         profileImg: {type: String, required: true},
         birthCertificateImg: {type: String, required: true},
         citizenshipCertificateImg: {type: String, required: true},
-        nidImg: {type: String, required: true},
+        nidImg: {type: String},
         studyingImg: {type: String, required: true},
     },
     
@@ -61,11 +63,6 @@ const dataSchema = mongoose.Schema( {
     courseId: {type:mongoose.Schema.Types.ObjectId, required: true}
 
 
-
-    
-
-
-   
 
 }, {timestamps: true, versionKey:false});
 

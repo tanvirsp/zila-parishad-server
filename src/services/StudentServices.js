@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const ObjectId= mongoose.Types.ObjectId;
 const StudentModel = require("../models/StudentModel");
 const SessionModel = require("../models/SessionModel");
+const ResultModel = require("../models/ResultModel");
 
 exports.AddStudentDataService = async(req) =>{
 
@@ -9,10 +10,10 @@ exports.AddStudentDataService = async(req) =>{
         
         const session = await SessionModel.findOne({status: "1"});
         const sessionId = session._id;
-        const reg = session.registerNumber;
+        const digit = session.sessionDigit;
 
         const totaldata = await StudentModel.find({}).count();
-        const regNumber = Number(reg + "001") + totaldata       
+        const regNumber = Number(digit + "001") + totaldata       
 
         const reqBody = req.body;
         reqBody.sessionId = sessionId;
@@ -41,9 +42,6 @@ exports.ViewStudentDataService =async(req) => {
 
         const ProjectionStage = {$project: {createdAt: 0, updatedAt: 0 , 
             "sessionDetails.createdAt" :0, "sessionDetails.updatedAt" :0, "courseDetails.createdAt" :0, "courseDetails.updatedAt" :0  }}
-
-
-
 
 
         const data= await StudentModel.aggregate([
@@ -118,25 +116,29 @@ exports.TotalStudentGroupBySessionService = async(req) =>{
 exports.ListByFilterService = async(req) =>{
     try {
        
-        const reqBody = req.body;
-        let matchCondition = {};
-        let selectedCondition= {status: "1"};
+        let pageNo = Number(req.query.pageNo);
+        let perPage = Number(req.query.perPage);
+        const skipRow = (pageNo - 1) * perPage;
 
-    
         
-        if(reqBody.courseId === "0"){
-                matchCondition.sessionId = new ObjectId (reqBody.sessionId);
-                selectedCondition.sessionId = new ObjectId (reqBody.sessionId);
+  
+        const currentSession = await SessionModel.findOne({status: 1});
+        const matchCondition = {
+            sessionId: new ObjectId(currentSession["_id"])
+        };
 
-        }else {
-            matchCondition.sessionId = new ObjectId (reqBody.sessionId);
-            matchCondition.courseId = new ObjectId (reqBody.courseId);
-          
-            selectedCondition.sessionId = new ObjectId (reqBody.sessionId);
-            selectedCondition.courseId = new ObjectId (reqBody.courseId);
-            
+        const reqBody = req.body;
+
+        if(reqBody["courseId"]){
+            matchCondition.courseId = new ObjectId(reqBody["courseId"]);
         }
+
+        if(reqBody["status"]){
+            matchCondition.status = reqBody["status"];
+        }
+
       
+    
 
 
         const MatchStage = {$match: matchCondition};
@@ -158,26 +160,22 @@ exports.ListByFilterService = async(req) =>{
                    "data":  [
                                 MatchStage, JoinWithSessionStage, 
                                 UnwindSessionStage, JoinWithCourseStage, 
-                                UnwindCourseStage, ProjectionStage ],
+                                UnwindCourseStage, ProjectionStage,
+                                {$skip: skipRow},
+                                {$limit: perPage}
+                             ],
                    "total": [MatchStage, {$count:"total"}],
-                   "selected": [{$match: selectedCondition },  {$count:"total"} ]
+
                 }
             }
         ]);
 
         const total = result[0].total[0] ? result[0].total[0].total : 0;
         const data = result[0].data;
-        const selected = result[0].selected[0]? result[0].selected[0].total : 0;
-
-
-
-
+    
        
-        return {status:"success", data: data, total: total, selected: selected }
-        //    return {status:"success", data: data, total: total, selected: selected}
-
-      
-        
+        return {status:"success", data: data, total: total }
+   
     } catch (error) {
         return {status:"fail",data:error.toString()}
     }
@@ -194,9 +192,21 @@ exports.StudentSearchService =async(req) => {
             $match: {$or: [{regNumber:search}, {mobile: search } ]}
         }
   
+        const JoinWithSessionStage ={$lookup: {from: "sessions", localField:"sessionId", foreignField: "_id", as: "session" }  };
+        const UnwindSessionStage={ $unwind: "$session"};
+        const JoinWithCourseStage ={$lookup: {from: "courses", localField:"courseId", foreignField: "_id", as: "course" }  };
+        const UnwindCourseStage = {$unwind: "$course"};
+        const ProjectionStage={$project:{'createdAt': 0,'updatedAt':0,'sessionId':0,'courseId':0, 
+             'session.createdAt': 0, 'session.updatedAt': 0, 'session.des': 0, 'session.status': 0, 'session.lastDate': 0,
+             'course.value' : 0, 'course.createdAt' : 0, 'course.updatedAt' : 0,
+            }}
 
         const data= await StudentModel.aggregate([
-            MatchingStage
+            MatchingStage,
+            JoinWithSessionStage, UnwindSessionStage,
+            JoinWithCourseStage, UnwindCourseStage,
+            ProjectionStage,
+            
         ])
 
         return {status:"success", data:data};
@@ -221,6 +231,25 @@ exports.SelectedStudentsService = async(req) =>{
 
 
         return {status:"success", data:data};
+
+    } catch (error) {
+        return {status:"fail",data:error.toString()}
+    }
+
+}
+
+
+exports.CheckBirthCertificateService = async(req) =>{
+    try {  
+        const birthNumber = req.params.birthNumber
+        console.log(birthNumber);
+
+        const isExists = await ResultModel.find({birthCertificateNumber: birthNumber }).count();
+        if(isExists === 0){
+            return {status:"success"};
+        }
+    
+        return {status:"fail", message:"This Birth Certificate Number Already Used"};
 
     } catch (error) {
         return {status:"fail",data:error.toString()}

@@ -5,7 +5,7 @@ const dataSchema = mongoose.Schema( {
     des : {type: String},
     lastDate : {type: Date, required: true  },
     status : {type: String, required: true  },
-    registerNumber : {type: String, required: true  },
+    sessionDigit : {type: String, required: true  },
 
 
 }, {timestamps: true, versionKey:false});

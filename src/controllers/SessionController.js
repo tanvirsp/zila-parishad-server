@@ -1,4 +1,4 @@
-const { AddSessionService, ViewSessionService, AllSessionService, UpdateSessionService, SessionListService } = require("../services/SessionServices");
+const { AddSessionService, ViewSessionService, UpdateSessionService, SessionListService, ActiveSessionService } = require("../services/SessionServices");
 
 
 
@@ -27,11 +27,16 @@ exports.UpdateSession = async( req, res) =>{
 
 
 
-
-
-
 exports.SessionList = async( req, res) =>{
     const result = await SessionListService(req);
 
     res.status(200).json(result)
 }
+
+
+exports.ActiveSession = async( req, res) =>{
+
+    const result = await ActiveSessionService(req);
+    res.status(200).json(result)
+}
+

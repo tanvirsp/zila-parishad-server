@@ -12,6 +12,7 @@ const hpp = require('hpp');
 
 
 
+
 const limiter = rateLimit({
 	windowMs: 15 * 60 * 1000, // 15 minutes
 	max: 300, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
@@ -25,7 +26,7 @@ const limiter = rateLimit({
 app.use(limiter)
 app.use(express.json())
 app.use(cookieParser())
-app.use(cors())
+app.use(cors({origin: ["http://localhost:5173", "http://localhost:5174"]  , credentials: true}))
 app.use(mongoSanitize())
 app.use(helmet())
 app.use(hpp())
@@ -35,11 +36,13 @@ app.use(express.static('pdf'));
 
 
 
+app.set('view engine', 'ejs')
+
 app.use("/api/v1", router);
 
 //Root Rought
 app.get("/", (req, res) =>{
-    res.send("Zila Porishad Server is Running")
+    res.json("Zila  Parishad Server is Running")
 })
 
 
